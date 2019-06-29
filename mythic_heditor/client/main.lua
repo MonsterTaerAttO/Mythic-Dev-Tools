@@ -44,7 +44,7 @@ local veh = nil
 
 function starts_with(str, start)
     return str:sub(1, #start) == start
- end
+end
 
 RegisterNetEvent('mythic_engine:client:PlayerEnteringVeh')
 AddEventHandler('mythic_engine:client:PlayerEnteringVeh', function(vehicle, currentSeat, displayname, netId)
@@ -67,11 +67,11 @@ AddEventHandler('mythic_engine:client:PlayerEnteringVeh', function(vehicle, curr
 end)
 
 RegisterNUICallback("UpdateHandlingField", function(data, cb)
-    if IsPedInAnyVehicle(GetPlayerPed(-1)) then
+    if IsPedInAnyVehicle(PlayerPedId()) then
         if starts_with(data.field, 'f') then
             print(data.field == handlingFields[data.index])
             print(GetVehicleHandlingFloat(veh, 'CHandlingData', data.field))
-            SetVehicleHandlingField(veh, 'CHandlingData', data.field, tonumber(data.value + 0.0))
+            SetVehicleHandlingFloat(veh, 'CHandlingData', data.field, tonumber(data.value + 0.0))
             handlingData[data.index].value = tonumber(data.value)
             print(GetVehicleHandlingFloat(veh, 'CHandlingData', data.field))
         else
@@ -90,9 +90,9 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        if IsPedInAnyVehicle(GetPlayerPed(-1)) then
+        if IsPedInAnyVehicle(PlayerPedId()) then
             if IsControlJustReleased(0, 54) then
-                print(GetVehicleHandlingFloat(veh, 'CHandlingData', handlingFields[7]))
+                print('bleh ' .. GetVehicleHandlingFloat(GetVehiclePedIsIn(PlayerPedId()),"CHandlingData","fInitialDriveForce"))
                 SetNuiFocus(true, true)
                 SendNUIMessage({
                     action = 'display',
