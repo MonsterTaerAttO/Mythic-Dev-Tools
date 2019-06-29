@@ -69,16 +69,11 @@ end)
 RegisterNUICallback("UpdateHandlingField", function(data, cb)
     if IsPedInAnyVehicle(PlayerPedId()) then
         if starts_with(data.field, 'f') then
-            print(data.field == handlingFields[data.index])
-            print(GetVehicleHandlingFloat(veh, 'CHandlingData', data.field))
             SetVehicleHandlingFloat(veh, 'CHandlingData', data.field, tonumber(data.value + 0.0))
             handlingData[data.index].value = tonumber(data.value)
-            print(GetVehicleHandlingFloat(veh, 'CHandlingData', data.field))
         else
-            print(GetVehicleHandlingInt(veh, 'CHandlingData', data.field))
             SetVehicleHandlingInt(veh, 'CHandlingData', data.field, tonumber(data.value))
             handlingData[data.index].value = tonumber(data.value)
-            print(GetVehicleHandlingInt(veh, 'CHandlingData', data.field))
         end
     end
 end)
@@ -87,18 +82,18 @@ RegisterNUICallback("CloseUI", function(data, cb)
     SetNuiFocus(false, false)
 end)
 
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        if IsPedInAnyVehicle(PlayerPedId()) then
+RegisterNetEvent('mythic_engine:client:PlayerEnteringVeh')
+AddEventHandler('mythic_engine:client:PlayerEnteringVeh', function()
+    Citizen.CreateThread(function()
+        while IsPedInAnyVehicle(PlayerPedId()) do
             if IsControlJustReleased(0, 54) then
-                print('bleh ' .. GetVehicleHandlingFloat(GetVehiclePedIsIn(PlayerPedId()),"CHandlingData","fInitialDriveForce"))
                 SetNuiFocus(true, true)
                 SendNUIMessage({
                     action = 'display',
                     handling = handlingData
                 })
             end
+            Citizen.Wait(0)
         end
-    end
+    end)
 end)
