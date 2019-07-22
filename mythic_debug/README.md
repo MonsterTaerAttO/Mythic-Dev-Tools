@@ -1,5 +1,5 @@
 # Mythic Debug - Modified Koil Debug Resource
-Slightly modified version of Koil's Debug Script, modded to use Mythic's Framework Print 3D Text Call Aswell As Show Status of Vehicle Interior & Exterior Inventories
+Slightly modified version of Koil's Debug Script, changed to Show Status of Vehicle Interior & Exterior Inventories
 
 Use /debug in-game to toggle (May Take A Few Seconds To Show)
 
