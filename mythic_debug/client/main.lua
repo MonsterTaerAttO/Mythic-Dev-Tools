@@ -1,24 +1,14 @@
 
 local dickheaddebug = false
 
-local Keys = {
-	["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57,
-	["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177,
-	["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["ENTER"] = 18,
-	["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182,
-	["LEFTSHIFT"] = 21, ["Z"] = 20, ["X"] = 73, ["C"] = 26, ["V"] = 0, ["B"] = 29, ["N"] = 249, ["M"] = 244, [","] = 82, ["."] = 81,
-	["LEFTCTRL"] = 36, ["LEFTALT"] = 19, ["SPACE"] = 22, ["RIGHTCTRL"] = 70,
-	["HOME"] = 213, ["PAGEUP"] = 10, ["PAGEDOWN"] = 11, ["DELETE"] = 178,
-	["LEFT"] = 174, ["RIGHT"] = 175, ["TOP"] = 27, ["DOWN"] = 173,
-	["NENTER"] = 201, ["N4"] = 108, ["N5"] = 60, ["N6"] = 107, ["N+"] = 96, ["N-"] = 97, ["N7"] = 117, ["N8"] = 61, ["N9"] = 118
-}
-
 RegisterNetEvent("hud:enabledebug")
 AddEventHandler("hud:enabledebug",function()
 	dickheaddebug = not dickheaddebug
     if dickheaddebug then
+        exports['mythic_base']:DoHudText('inform', 'Debug Enabled')
         print("Debug: Enabled")
     else
+        exports['mythic_base']:DoHudText('inform', 'Debug Disabled')
         print("Debug: Disabled")
     end
 end)
@@ -40,8 +30,30 @@ function drawTxt(x,y ,width,height,scale, text, r,g,b,a)
     DrawText(x - width/2, y - height/2 + 0.005)
 end
 
+function Print3DText(coords, text)
+	local onScreen, _x, _y = World3dToScreen2d(coords.x, coords.y, coords.z)
+
+	if onScreen then
+		SetTextScale(0.35, 0.35)
+		SetTextFont(4)
+		SetTextProportional(1)
+		SetTextColour(255, 255, 255, 255)
+		SetTextDropShadow(0, 0, 0, 55)
+		SetTextEdge(0, 0, 0, 150)
+		SetTextDropShadow()
+		SetTextOutline()
+		SetTextEntry("STRING")
+		SetTextCentre(1)
+		AddTextComponentString(text)
+		DrawText(_x,_y)
+
+		local factor = (string.len(text)) / 370
+		DrawRect(_x,_y + 0.0125, 0.015 + factor, 0.03, 255, 0, 0, 68)
+	end
+end
+
 function GetVehicle()
-    local playerped = GetPlayerPed(-1)
+    local playerped = PlayerPedId()
     local playerCoords = GetEntityCoords(playerped)
     local handle, ped = FindFirstVehicle()
     local success
@@ -50,19 +62,19 @@ function GetVehicle()
     repeat
         local pos = GetOffsetFromEntityInWorldCoords(ped, 0, 0, 1.0)
         local pos2 = GetOffsetFromEntityInWorldCoords(ped, 0, 0, 0.75)
-        local distance = GetDistanceBetweenCoords(playerCoords, pos, true)
+        local distance = #(vector3(pos.x, pos.y, pos.z) - playerCoords)
         if canPedBeUsed(ped) and distance < 30.0 and (distanceFrom == nil or distance < distanceFrom) then
             distanceFrom = distance
             rped = ped
             local exterior = DecorExistOn(ped, 'car-exterior-' .. GetVehicleNumberPlateText(ped))
             local interior = DecorExistOn(ped, 'car-interior-' .. GetVehicleNumberPlateText(ped))
            -- FreezeEntityPosition(ped, inFreeze)
-            if IsEntityTouchingEntity(GetPlayerPed(-1), ped) then
-                exports['mythic_base']:Print3DText(pos, "Veh: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT")
-                exports['mythic_base']:Print3DText(pos2, "Interior: " .. tostring(interior) .. " ~r~- ~s~Exterior: " .. tostring(exterior))
+            if IsEntityTouchingEntity(PlayerPedId(), ped) then
+                Print3DText(pos, "Veh: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT")
+                Print3DText(pos2, "Interior: " .. tostring(interior) .. " ~c~- ~s~Exterior: " .. tostring(exterior))
 	    	else
-                exports['mythic_base']:Print3DText(pos, "Veh: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT")
-                exports['mythic_base']:Print3DText(pos2, "Interior: " .. tostring(interior) .. " ~r~- ~s~Exterior: " .. tostring(exterior))
+                Print3DText(pos, "Veh: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT")
+                Print3DText(pos2, "Interior: " .. tostring(interior) .. " ~c~- ~s~Exterior: " .. tostring(exterior))
 	    	end
             if lowGrav then
             	SetEntityCoords(ped,pos["x"],pos["y"],pos["z"]+5.0)
@@ -75,24 +87,28 @@ function GetVehicle()
 end
 
 function GetObject()
-    local playerped = GetPlayerPed(-1)
+    local playerped = PlayerPedId()
     local playerCoords = GetEntityCoords(playerped)
     local handle, ped = FindFirstObject()
     local success
     local rped = nil
     local distanceFrom
     repeat
+        local objPos = GetEntityCoords(ped)
         local pos = GetOffsetFromEntityInWorldCoords(ped, 0, 0, 1.0)
-        local distance = GetDistanceBetweenCoords(playerCoords, pos, true)
+        local pos2 = GetOffsetFromEntityInWorldCoords(ped, 0, 0, 0.75)
+        local distance = #(vector3(pos.x, pos.y, pos.z) - playerCoords)
         if distance < 10.0 then
             distanceFrom = distance
             rped = ped
             --FreezeEntityPosition(ped, inFreeze)
-	    	if IsEntityTouchingEntity(GetPlayerPed(-1), ped) then
-                exports['mythic_base']:Print3DText(pos, "Obj: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT" )
+	    	if IsEntityTouchingEntity(PlayerPedId(), ped) then
+                Print3DText(pos, "Obj: " .. ped .. " Model: " .. GetEntityModel(ped) .. " IN CONTACT" )
 	    	else
-                exports['mythic_base']:Print3DText(pos, "Obj: " .. ped .. " Model: " .. GetEntityModel(ped) .. "" )
-	    	end
+                Print3DText(pos, "Obj: " .. ped .. " Model: " .. GetEntityModel(ped) .. "" )
+            end
+            
+            Print3DText(pos2, "Pos: x" .. objPos.x .. " y " .. objPos.y .. " z " .. objPos.z )
 
             if lowGrav then
             	--ActivatePhysics(ped)
@@ -111,7 +127,7 @@ end
 
 
 function getNPC()
-    local playerped = GetPlayerPed(-1)
+    local playerped = PlayerPedId()
     local playerCoords = GetEntityCoords(playerped)
     local handle, ped = FindFirstPed()
     local success
@@ -119,15 +135,15 @@ function getNPC()
     local distanceFrom
     repeat
         local pos = GetEntityCoords(ped)
-        local distance = GetDistanceBetweenCoords(playerCoords, pos, true)
+        local distance = #(vector3(pos.x, pos.y, pos.z) - playerCoords)
         if canPedBeUsed(ped) and distance < 30.0 and (distanceFrom == nil or distance < distanceFrom) then
             distanceFrom = distance
             rped = ped
 
-	    	if IsEntityTouchingEntity(GetPlayerPed(-1), ped) then
-                exports['mythic_base']:Print3DText(pos, "Ped: " .. ped .. " Model: " .. GetEntityModel(ped) .. " Relationship HASH: " .. GetPedRelationshipGroupHash(ped) .. " IN CONTACT" )
+	    	if IsEntityTouchingEntity(PlayerPedId(), ped) then
+                Print3DText(pos, "Ped: " .. ped .. " Model: " .. GetEntityModel(ped) .. " Relationship HASH: " .. GetPedRelationshipGroupHash(ped) .. " IN CONTACT" )
 	    	else
-                exports['mythic_base']:Print3DText(pos, "Ped: " .. ped .. " Model: " .. GetEntityModel(ped) .. " Relationship HASH: " .. GetPedRelationshipGroupHash(ped))
+                Print3DText(pos, "Ped: " .. ped .. " Model: " .. GetEntityModel(ped) .. " Relationship HASH: " .. GetPedRelationshipGroupHash(ped))
 	    	end
 
             FreezeEntityPosition(ped, inFreeze)
@@ -146,7 +162,7 @@ function canPedBeUsed(ped)
     if ped == nil then
         return false
     end
-    if ped == GetPlayerPed(-1) then
+    if ped == PlayerPedId() then
         return false
     end
     if not DoesEntityExist(ped) then
@@ -164,29 +180,30 @@ Citizen.CreateThread( function()
         Citizen.Wait(1)
         
         if dickheaddebug then
-            local pos = GetEntityCoords(GetPlayerPed(-1))
+            local player = PlayerPedId()
+            local pos = GetEntityCoords(player)
 
-            local forPos = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0, 1.0, 0.0)
-            local backPos = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0, -1.0, 0.0)
-            local LPos = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 1.0, 0.0, 0.0)
-            local RPos = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), -1.0, 0.0, 0.0) 
+            local forPos = GetOffsetFromEntityInWorldCoords(player, 0, 1.0, 0.0)
+            local backPos = GetOffsetFromEntityInWorldCoords(player, 0, -1.0, 0.0)
+            local LPos = GetOffsetFromEntityInWorldCoords(player, 1.0, 0.0, 0.0)
+            local RPos = GetOffsetFromEntityInWorldCoords(player -1.0, 0.0, 0.0) 
 
-            local forPos2 = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0, 2.0, 0.0)
-            local backPos2 = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0, -2.0, 0.0)
-            local LPos2 = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 2.0, 0.0, 0.0)
-            local RPos2 = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), -2.0, 0.0, 0.0)    
+            local forPos2 = GetOffsetFromEntityInWorldCoords(player, 0, 2.0, 0.0)
+            local backPos2 = GetOffsetFromEntityInWorldCoords(player, 0, -2.0, 0.0)
+            local LPos2 = GetOffsetFromEntityInWorldCoords(player, 2.0, 0.0, 0.0)
+            local RPos2 = GetOffsetFromEntityInWorldCoords(player, -2.0, 0.0, 0.0)    
 
-            local x, y, z = table.unpack(GetEntityCoords(GetPlayerPed(-1), true))
+            local x, y, z = table.unpack(GetEntityCoords(player, true))
             local currentStreetHash, intersectStreetHash = GetStreetNameAtCoord(x, y, z, currentStreetHash, intersectStreetHash)
             currentStreetName = GetStreetNameFromHashKey(currentStreetHash)
 
-            drawTxt(0.8, 0.50, 0.4,0.4,0.30, "Heading: " .. GetEntityHeading(GetPlayerPed(-1)), 55, 155, 55, 255)
+            drawTxt(0.8, 0.50, 0.4,0.4,0.30, "Heading: " .. GetEntityHeading(player), 55, 155, 55, 255)
             drawTxt(0.8, 0.52, 0.4,0.4,0.30, "Coords: " .. pos, 55, 155, 55, 255)
-            drawTxt(0.8, 0.54, 0.4,0.4,0.30, "Attached Ent: " .. GetEntityAttachedTo(GetPlayerPed(-1)), 55, 155, 55, 255)
-            drawTxt(0.8, 0.56, 0.4,0.4,0.30, "Health: " .. GetEntityHealth(GetPlayerPed(-1)), 55, 155, 55, 255)
-            drawTxt(0.8, 0.58, 0.4,0.4,0.30, "H a G: " .. GetEntityHeightAboveGround(GetPlayerPed(-1)), 55, 155, 55, 255)
-            drawTxt(0.8, 0.60, 0.4,0.4,0.30, "Model: " .. GetEntityModel(GetPlayerPed(-1)), 55, 155, 55, 255)
-            drawTxt(0.8, 0.62, 0.4,0.4,0.30, "Speed: " .. GetEntitySpeed(GetPlayerPed(-1)), 55, 155, 55, 255)
+            drawTxt(0.8, 0.54, 0.4,0.4,0.30, "Attached Ent: " .. GetEntityAttachedTo(player), 55, 155, 55, 255)
+            drawTxt(0.8, 0.56, 0.4,0.4,0.30, "Health: " .. GetEntityHealth(player, 55, 155, 55, 255)
+            drawTxt(0.8, 0.58, 0.4,0.4,0.30, "H a G: " .. GetEntityHeightAboveGround(player), 55, 155, 55, 255)
+            drawTxt(0.8, 0.60, 0.4,0.4,0.30, "Model: " .. GetEntityModel(player), 55, 155, 55, 255)
+            drawTxt(0.8, 0.62, 0.4,0.4,0.30, "Speed: " .. GetEntitySpeed(player), 55, 155, 55, 255)
             drawTxt(0.8, 0.64, 0.4,0.4,0.30, "Frame Time: " .. GetFrameTime(), 55, 155, 55, 255)
             drawTxt(0.8, 0.66, 0.4,0.4,0.30, "Street: " .. currentStreetName, 55, 155, 55, 255)
             
@@ -212,20 +229,20 @@ Citizen.CreateThread( function()
             if IsControlJustReleased(0, 38) then
                 if inFreeze then
                     inFreeze = false
-                    TriggerEvent("DoShortHudText",'Freeze Disabled',3)          
+                    exports['mythic_base']:DoHudText('inform', 'Freeze Disabled')
                 else
-                    inFreeze = true             
-                    TriggerEvent("DoShortHudText",'Freeze Enabled',3)               
+                    inFreeze = true
+                    exports['mythic_base']:DoHudText('inform', 'Freeze Enabled')     
                 end
             end
 
             if IsControlJustReleased(0, 47) then
                 if lowGrav then
                     lowGrav = false
-                    TriggerEvent("DoShortHudText",'Low Grav Disabled',3)            
+                    exports['mythic_base']:DoHudText('inform', 'Low Grav Disabled')
                 else
                     lowGrav = true              
-                    TriggerEvent("DoShortHudText",'Low Grav Enabled',3)                 
+                    exports['mythic_base']:DoHudText('inform', 'Low Grav Enabled')     
                 end
             end
 
